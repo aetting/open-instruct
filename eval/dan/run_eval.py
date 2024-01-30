@@ -60,7 +60,7 @@ def judge_compliance(args,model,tokenizer,questions,outputs
         model, tokenizer, prompts, candidate_token_ids=answer_choice_ids, return_token_predictions=True
     )
     print(pred_tokens)
-    complied = [re.match(".*[Y|y]es",e) is not None for e in l]
+    complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
     print(complied)
 
 

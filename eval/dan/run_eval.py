@@ -61,7 +61,6 @@ def main(args):
                 # we will use the original text from toxigen as the prompt.
                 prompt = example["jailbreak"] + "\n" + example["question"]
             prompts.append(prompt)
-        import pdb; pdb.set_trace()
 
         if args.use_vllm:
             print("Loading vLLM model...")
@@ -110,7 +109,7 @@ def main(args):
             output_path=os.path.join(args.save_dir, "openai_query_cache.jsonl"),
         )
         outputs = [result["output"] for result in performance]
-
+    import pdb; pdb.set_trace()
 
     # Run the toxicity classifier
     toxigen_roberta_tokenizer = AutoTokenizer.from_pretrained("tomh/toxigen_roberta")

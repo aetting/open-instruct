@@ -66,6 +66,26 @@ def judge_compliance(args,model,tokenizer,questions,outputs
     print(complied)
     print(sum(complied))
 
+def collect_items(args,datafile):
+    examples = []
+    components = pd.read_csv(datafile)
+    if args.num_instances is not None:
+        components = components.sample(args.num_instances, random_state=42)
+    if args.questions_only:
+        for idx in components.index:
+            jailbreak = components.loc[idx,"prompt"]
+            question = components.loc[idx,"question"]
+            examples.append({
+                "jailbreak": jailbreak,
+                "question": question,
+            })
+    else:
+        for idx in components.index:
+            question = components.loc[idx,"question"]
+            examples.append({
+                "question": question,
+            })
+    return examples
 
 
 def main(args):
@@ -73,17 +93,12 @@ def main(args):
     os.makedirs(args.save_dir, exist_ok=True)
     
     # Load the testing data
-    examples = []
-    components = pd.read_csv(os.path.join(args.data_dir, "forbidden_question_set.csv"))
-    if args.num_instances is not None:
-        components = components.sample(args.num_instances, random_state=42)
-    for idx in components.index:
-        jailbreak = components.loc[idx,"prompt"]
-        question = components.loc[idx,"question"]
-        examples.append({
-            "jailbreak": jailbreak,
-            "question": question,
-        })
+    if args.questions_only:
+        datafile = os.path.join(args.data_dir, "questions.csv")
+    else:
+        datafile = os.path.join(args.data_dir, "forbidden_question_set.csv")
+    
+    examples = collect_items(args,datafile) 
 
     import pdb; pdb.set_trace()
 
@@ -91,16 +106,19 @@ def main(args):
     if args.model_name_or_path:
         prompts = []
         for example in examples:
+            if args.questions_only:
+                core_content = example["question"]
+            else:
+                core_content = example["jailbreak"] + "\n" + example["question"]
             if args.use_chat_format:
-                messages = [{"role": "user", "content": "Complete the following: " + "\n" + example["question"]}]
-                # messages = [{"role": "user", "content": "Complete the following: " + example["jailbreak"] + "\n" + example["question"]}]
+                messages = [{"role": "user", "content": "Complete the following: " + "\n" + core_content}]
                 chat_formatting_function = dynamic_import_function(args.chat_formatting_function)
                 prompt = chat_formatting_function(messages, add_bos=False)
             else:
-                # we will use the original text from toxigen as the prompt.
-                prompt = example["question"]
-                # prompt = example["jailbreak"] + "\n" + example["question"]
+                # we will use the original text as the prompt.
+                prompt = core_content
             prompts.append(prompt)
+        import pdb; pdb.set_trace()
 
         if args.use_vllm:
             print("Loading vLLM model...")
@@ -247,6 +265,11 @@ if __name__ == "__main__":
         type=int, 
         default=None, 
         help="The number of instances to evaluate. If not given, we will evaluate all instances."
+    )
+    parser.add_argument(
+        "--questions_only", 
+        action="store_true", 
+        help="If given, we will use only the questions, with no jailbreak prompts added."
     )
     parser.add_argument(
         "--classifier_batch_size",

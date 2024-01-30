@@ -298,25 +298,25 @@ if __name__ == "__main__":
     assert (args.model_name_or_path is None) != (
         args.openai_engine is None
     ), "Either model_name_or_path or openai_engine should be specified."
-    # main(args)
+    main(args)
 
-    model, tokenizer = load_hf_lm_and_tokenizer(
-                model_name_or_path=args.model_name_or_path,
-                tokenizer_name_or_path=args.tokenizer_name_or_path if args.model_name_or_path else args.model_name_or_path,
-                load_in_8bit=args.load_in_8bit,
-                device_map="balanced_low_0" if torch.cuda.device_count() > 1 else "auto",
-                gptq_model=args.gptq,
-                use_fast_tokenizer=not args.use_slow_tokenizer,
-            )
+    # model, tokenizer = load_hf_lm_and_tokenizer(
+    #             model_name_or_path=args.model_name_or_path,
+    #             tokenizer_name_or_path=args.tokenizer_name_or_path if args.model_name_or_path else args.model_name_or_path,
+    #             load_in_8bit=args.load_in_8bit,
+    #             device_map="balanced_low_0" if torch.cuda.device_count() > 1 else "auto",
+    #             gptq_model=args.gptq,
+    #             use_fast_tokenizer=not args.use_slow_tokenizer,
+    #         )
 
-    import json
-    question_list = []
-    outputs = []
-    with open("/net/nfs.cirrascale/mosaic/allysone/tulu-eval/results/predictions.jsonl") as f:
-        for line in f:
-            d = json.loads(line)
-            question_list.append(d["question"])
-            outputs.append(d["prediction"])
+    # import json
+    # question_list = []
+    # outputs = []
+    # with open("/net/nfs.cirrascale/mosaic/allysone/tulu-eval/results/predictions.jsonl") as f:
+    #     for line in f:
+    #         d = json.loads(line)
+    #         question_list.append(d["question"])
+    #         outputs.append(d["prediction"])
 
 
-    judge_compliance(args,model,tokenizer,question_list,outputs)
+    # judge_compliance(args,model,tokenizer,question_list,outputs)

@@ -15,6 +15,7 @@ from eval.utils import (
     generate_completions,
     load_hf_lm_and_tokenizer,
     query_openai_chat_model,
+    get_next_word_predictions
 )
 from eval.utils import dynamic_import_function 
 

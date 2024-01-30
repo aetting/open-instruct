@@ -54,12 +54,12 @@ def main(args):
         prompts = []
         for example in examples:
             if args.use_chat_format:
-                messages = [{"role": "user", "content": "Complete the following: " + example["text"]}]
+                messages = [{"role": "user", "content": "Complete the following: " + example["jailbreak"] + "\n" + example["question"]}]
                 chat_formatting_function = dynamic_import_function(args.chat_formatting_function)
                 prompt = chat_formatting_function(messages, add_bos=False)
             else:
                 # we will use the original text from toxigen as the prompt.
-                prompt = example["text"]
+                prompt = example["jailbreak"] + "\n" + example["question"]
             prompts.append(prompt)
         import pdb; pdb.set_trace()
 

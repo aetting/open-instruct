@@ -66,10 +66,6 @@ def main(args):
                 # prompt = example["jailbreak"] + "\n" + example["question"]
             prompts.append(prompt)
 
-        for prompt in prompts:
-            print(prompt)
-            print("\n\n\n~~~~~~~~\n\n\n")
-
         if args.use_vllm:
             print("Loading vLLM model...")
             model = vllm.LLM(
@@ -117,6 +113,12 @@ def main(args):
             output_path=os.path.join(args.save_dir, "openai_query_cache.jsonl"),
         )
         outputs = [result["output"] for result in performance]
+
+    for prompt,output in zip(prompts,outputs):
+        print(prompt)
+        print("~~~~")
+        print(output)
+        print("\n\n\n~~~~~~~~\n\n\n")
 
     # Run the toxicity classifier
     toxigen_roberta_tokenizer = AutoTokenizer.from_pretrained("tomh/toxigen_roberta")

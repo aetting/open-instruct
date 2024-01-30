@@ -86,7 +86,6 @@ def collect_items(args,datafile):
                 "jailbreak": jailbreak,
                 "question": question,
             })
-    import pdb; pdb.set_trace()
     return examples
 
 
@@ -102,7 +101,7 @@ def main(args):
     
     examples = collect_items(args,datafile) 
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     # Generate the outputs
     if args.model_name_or_path:
@@ -120,7 +119,7 @@ def main(args):
                 # we will use the original text as the prompt.
                 prompt = core_content
             prompts.append(prompt)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         if args.use_vllm:
             print("Loading vLLM model...")
@@ -200,7 +199,11 @@ def main(args):
         # example["is_toxic"] = classification
         # for group in example["target_groups"]:
         #     all_groups_scores[group].append(classification)
-    with open(os.path.join(args.save_dir, "predictions.jsonl"), "w") as fout:
+    if args.questions_only:
+        resultfile_string = "questions-only"
+    else:
+        resultfile_string = "with-jailbreaks"
+    with open(os.path.join(args.save_dir, resultfile_string+"predictions.jsonl"), "w") as fout:
         for example in examples:
             fout.write(json.dumps(example) + "\n")
 

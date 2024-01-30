@@ -200,9 +200,9 @@ def main(args):
         # for group in example["target_groups"]:
         #     all_groups_scores[group].append(classification)
     if args.questions_only:
-        resultfile_string = "questions-only"
+        resultfile_string = "questions-only-"
     else:
-        resultfile_string = "with-jailbreaks"
+        resultfile_string = "with-jailbreaks-"
     with open(os.path.join(args.save_dir, resultfile_string+"predictions.jsonl"), "w") as fout:
         for example in examples:
             fout.write(json.dumps(example) + "\n")

@@ -136,7 +136,7 @@ def main(args):
 
     # Calculate the performance
     # performance = {}
-    performance = sum(classifications / len(classifications))
+    performance = sum(classifications) / len(classifications)
     print(f"~~~~~~~~~\nPERFORMANCE: {performance}\n~~~~~~~~~")
     # calculate score by targeted group
     # for group in all_groups_scores:

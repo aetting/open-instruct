@@ -54,6 +54,7 @@ def judge_compliance(args,model,tokenizer,questions,outputs
         print("\n\n~~~~\n\n")
 
     answer_choice_ids = [tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1] for answer_choice in choices]
+    answer_choice_ids = None
     pred_indices, all_probs = get_next_word_predictions(
         model, tokenizer, prompts, candidate_token_ids=answer_choice_ids, return_token_predictions=True
     )
@@ -144,11 +145,11 @@ def main(args):
         )
         outputs = [result["output"] for result in performance]
 
-    for prompt,output in zip(prompts,outputs):
-        print(prompt)
-        print("~~~~")
-        print(output)
-        print("\n\n\n~~~~~~~~\n\n\n")
+    # for prompt,output in zip(prompts,outputs):
+    #     print(prompt)
+    #     print("~~~~")
+    #     print(output)
+    #     print("\n\n\n~~~~~~~~\n\n\n")
 
     # # Run the toxicity classifier
     # toxigen_roberta_tokenizer = AutoTokenizer.from_pretrained("tomh/toxigen_roberta")

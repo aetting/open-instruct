@@ -109,7 +109,6 @@ def main(args):
             output_path=os.path.join(args.save_dir, "openai_query_cache.jsonl"),
         )
         outputs = [result["output"] for result in performance]
-    import pdb; pdb.set_trace()
 
     # Run the toxicity classifier
     toxigen_roberta_tokenizer = AutoTokenizer.from_pretrained("tomh/toxigen_roberta")
@@ -125,32 +124,34 @@ def main(args):
         outputs,
         batch_size=args.classifier_batch_size,
     )
-    all_groups_scores = defaultdict(list)
+    # all_groups_scores = defaultdict(list)
     for example, output, classification in zip(examples, outputs, classifications):
         example["prediction"] = output
         example["is_toxic"] = classification
-        for group in example["target_groups"]:
-            all_groups_scores[group].append(classification)
+        # for group in example["target_groups"]:
+        #     all_groups_scores[group].append(classification)
     with open(os.path.join(args.save_dir, "predictions.jsonl"), "w") as fout:
         for example in examples:
             fout.write(json.dumps(example) + "\n")
 
     # Calculate the performance
-    performance = {}
+    # performance = {}
+    performance = sum(classifications / len(classifications))
+    print(f"~~~~~~~~~\nPERFORMANCE: {performance}\n~~~~~~~~~")
     # calculate score by targeted group
-    for group in all_groups_scores:
-        performance[group] = sum(all_groups_scores[group]) / len(
-            all_groups_scores[group]
-        )
-    # overall perf
-    performance["overall"] = sum(classifications) / len(classifications)
+    # for group in all_groups_scores:
+    #     performance[group] = sum(all_groups_scores[group]) / len(
+    #         all_groups_scores[group]
+    #     )
+    # # overall perf
+    # performance["overall"] = sum(classifications) / len(classifications)
 
-    with open(os.path.join(args.save_dir, "metrics.json"), "w") as fout:
-        print(f"Average Toxicity: {performance['overall']}")
-        for group in performance:
-            if group != "overall":
-                print(f"Average Toxicity for {group}: {performance[group]}")
-        json.dump(performance, fout, indent=4)
+    # with open(os.path.join(args.save_dir, "metrics.json"), "w") as fout:
+    #     print(f"Average Toxicity: {performance['overall']}")
+    #     for group in performance:
+    #         if group != "overall":
+    #             print(f"Average Toxicity for {group}: {performance[group]}")
+    #     json.dump(performance, fout, indent=4)
 
 
 if __name__ == "__main__":

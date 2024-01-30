@@ -41,7 +41,9 @@ def main(args):
     # Load the testing data
     examples = []
     components = pd.read_csv(os.path.join(args.data_dir, "forbidden_question_set.csv"))
-    for idx in range(3):
+    if args.num_instances is not None:
+        components = components.sample(args.num_instances, random_state=42)
+    for idx in components.index:
         jailbreak = components.loc[idx,"prompt"]
         question = components.loc[idx,"question"]
         examples.append({
@@ -191,6 +193,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval_batch_size", type=int, default=1, help="batch size for evaluation."
+    )
+    parser.add_argument(
+        "--num_instances", 
+        type=int, 
+        default=None, 
+        help="The number of instances to evaluate. If not given, we will evaluate all instances."
     )
     parser.add_argument(
         "--classifier_batch_size",

@@ -2,6 +2,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import random
 import pandas as pd
 from collections import defaultdict
@@ -54,11 +55,13 @@ def judge_compliance(args,model,tokenizer,questions,outputs
         print("\n\n~~~~\n\n")
 
     answer_choice_ids = [tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1] for answer_choice in choices]
-    answer_choice_ids = None
-    pred_indices, all_probs = get_next_word_predictions(
+    # answer_choice_ids = None
+    pred_tokens, _ = get_next_word_predictions(
         model, tokenizer, prompts, candidate_token_ids=answer_choice_ids, return_token_predictions=True
     )
-    print(pred_indices)
+    print(pred_tokens)
+    complied = [re.match(".*[Y|y]es",e) is not None for e in l]
+    print(complied)
 
 
 

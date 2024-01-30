@@ -68,7 +68,7 @@ def judge_compliance(args,model,tokenizer,questions,outputs
 
 def collect_items(args,datafile):
     examples = []
-    components = pd.read_csv(datafile)
+    components = pd.read_csv(datafile).query('response_idx==0')
     import pdb; pdb.set_trace()
     if args.num_instances is not None:
         components = components.sample(args.num_instances, random_state=42)

@@ -113,7 +113,7 @@ def main(args):
             else:
                 core_content = example["jailbreak"] + "\n" + example["question"]
             if args.use_chat_format:
-                messages = [{"role": "user", "content": "Complete the following: " + "\n" + core_content}]
+                messages = [{"role": "user", "content": core_content}]
                 chat_formatting_function = dynamic_import_function(args.chat_formatting_function)
                 prompt = chat_formatting_function(messages, add_bos=False)
             else:

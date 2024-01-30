@@ -49,8 +49,6 @@ def main(args):
             "question": question,
         })
 
-    import pdb; pdb.set_trace()
-
     # Generate the outputs
     if args.model_name_or_path:
         prompts = []
@@ -63,6 +61,7 @@ def main(args):
                 # we will use the original text from toxigen as the prompt.
                 prompt = example["text"]
             prompts.append(prompt)
+        import pdb; pdb.set_trace()
 
         if args.use_vllm:
             print("Loading vLLM model...")

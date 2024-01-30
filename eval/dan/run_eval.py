@@ -42,8 +42,8 @@ def main(args):
     examples = []
     components = pd.read_csv(os.path.join(args.data_dir, "forbidden_question_set.csv"))
     for idx in range(3):
-        jailbreak = components[idx,"prompt"]
-        question = components[idx,"question"]
+        jailbreak = components.loc[idx,"prompt"]
+        question = components.loc[idx,"question"]
         examples.append({
             "jailbreak": jailbreak,
             "question": question,

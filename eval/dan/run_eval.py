@@ -312,7 +312,7 @@ if __name__ == "__main__":
     import json
     question_list = []
     outputs = []
-    with open("/net/nfs.cirrascale/mosaic/allysone/tulu-eval/") as f:
+    with open("/net/nfs.cirrascale/mosaic/allysone/tulu-eval/results/predictions.jsonl") as f:
         for line in f:
             d = json.loads(line)
             question_list.append(d["question"])

@@ -62,6 +62,7 @@ def judge_compliance(args,model,tokenizer,questions,outputs
     print(pred_tokens)
     complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
     print(complied)
+    print(sum(complied))
 
 
 

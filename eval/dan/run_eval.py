@@ -69,20 +69,21 @@ def judge_compliance(args,model,tokenizer,questions,outputs
 def collect_items(args,datafile):
     examples = []
     components = pd.read_csv(datafile)
+    import pdb; pdb.set_trace()
     if args.num_instances is not None:
         components = components.sample(args.num_instances, random_state=42)
     if args.questions_only:
+        for idx in components.index:
+            question = components.loc[idx,"question"]
+            examples.append({
+                "question": question,
+            })
+    else:
         for idx in components.index:
             jailbreak = components.loc[idx,"prompt"]
             question = components.loc[idx,"question"]
             examples.append({
                 "jailbreak": jailbreak,
-                "question": question,
-            })
-    else:
-        for idx in components.index:
-            question = components.loc[idx,"question"]
-            examples.append({
                 "question": question,
             })
     return examples

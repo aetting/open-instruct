@@ -66,6 +66,10 @@ def main(args):
                 # prompt = example["jailbreak"] + "\n" + example["question"]
             prompts.append(prompt)
 
+        for prompt in prompts:
+            print(prompt)
+            print("\n\n\n~~~~~~~~\n\n\n")
+
         if args.use_vllm:
             print("Loading vLLM model...")
             model = vllm.LLM(

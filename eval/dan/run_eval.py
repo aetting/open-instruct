@@ -36,7 +36,7 @@ def score_generations(
 
 def main(args):
     random.seed(42)
-    # os.makedirs(args.save_dir, exist_ok=True)
+    os.makedirs(args.save_dir, exist_ok=True)
     
     # Load the testing data
     examples = []

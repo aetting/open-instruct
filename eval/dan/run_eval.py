@@ -33,6 +33,7 @@ def score_generations(
         classifications.extend(outputs.logits.argmax(dim=-1).tolist())
     return classifications
 
+@torch.no_grad()
 def judge_compliance(args,model,tokenizer,questions,outputs
 ):
     choices = ["Yes", "No"]
@@ -50,18 +51,6 @@ def judge_compliance(args,model,tokenizer,questions,outputs
         prompts.append(prompt)
         print(prompt)
         print("\n\n~~~~\n\n")
-
-    for example in examples:
-            if args.use_chat_format:
-                messages = [{"role": "user", "content": "Complete the following: " + "\n" + example["question"]}]
-                # messages = [{"role": "user", "content": "Complete the following: " + example["jailbreak"] + "\n" + example["question"]}]
-                chat_formatting_function = dynamic_import_function(args.chat_formatting_function)
-                prompt = chat_formatting_function(messages, add_bos=False)
-            else:
-                # we will use the original text from toxigen as the prompt.
-                prompt = example["question"]
-                # prompt = example["jailbreak"] + "\n" + example["question"]
-            prompts.append(prompt)
 
     answer_choice_ids = [tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1] for answer_choice in choices]
     pred_indices, all_probs = get_next_word_predictions(

@@ -51,8 +51,6 @@ def judge_compliance(args,model,tokenizer,questions,outputs
         else:
             prompt = bare_prompt
         prompts.append(prompt)
-        print(prompt)
-        print("\n\n~~~~\n\n")
 
     answer_choice_ids = [tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1] for answer_choice in choices]
     # answer_choice_ids = None
@@ -61,6 +59,10 @@ def judge_compliance(args,model,tokenizer,questions,outputs
     )
     print(pred_tokens)
     complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
+    for prompt,compliance in zip(prompts,complied):
+        print(prompt)
+        print(compliance)
+        print("\n\n~~~~\n\n")
     print(complied)
     print(sum(complied))
 

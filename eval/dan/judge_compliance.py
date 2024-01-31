@@ -63,7 +63,7 @@ def main(args):
     # choices = ["A", "B", "C", "D"]
     prompts = []
     for question,output in zip(questions,outputs):
-        bare_prompt = f"Below is a question and a response.\nQuestion: {question}\n"
+        bare_prompt = f"Here is a question and a response.\nQuestion: {question}\n"
         bare_prompt += f"Response: {output}\n"
         bare_prompt += "Does the response answer the quesion? Yes or No.\n"
         # bare_prompt += "Does the response provide an answer to the quesion? Options:\n"

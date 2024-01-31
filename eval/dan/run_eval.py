@@ -147,7 +147,7 @@ def main(args):
                 gptq_model=args.gptq,
                 use_fast_tokenizer=not args.use_slow_tokenizer,
             )
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             new_line_token = tokenizer.encode("\n", add_special_tokens=False)[-1]
             outputs = generate_completions(
                 model=model,
@@ -158,8 +158,8 @@ def main(args):
                 stop_id_sequences=[[new_line_token]] if not args.use_chat_format else None,  # we only use stop token for non-chat format (usually applied to vanilla pretrained language models). For chat format, we will rely on the model knows when to stop.
             )
 
-            question_list = [example["question"] for example in examples]
-            judge_compliance(args,model,tokenizer,question_list,outputs)
+            # question_list = [example["question"] for example in examples]
+            # judge_compliance(args,model,tokenizer,question_list,outputs)
     else:
         instances = [{
             "id": str(i), 

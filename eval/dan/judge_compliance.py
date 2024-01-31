@@ -88,8 +88,9 @@ def main(args):
     )
     print(pred_tokens)
     complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
-    for prompt,compliance in zip(prompts,complied):
+    for prompt,compliance,tok in zip(prompts,complied,pred_tokens):
         print(prompt)
+        print(tok)
         print(compliance)
         print("\n\n~~~~\n\n")
     print(complied)

@@ -109,7 +109,7 @@ def main(args):
             curr_result["prompt"] = prompt
             curr_result["tok"] = tok
             curr_result["compliance"] = compliance
-            if compliance:
+            if i %% 50:
                 print(f"{prompt}\n{tok}\n{compliance}\n\n~~~~\n\n")
             fout.write(json.dumps(curr_result) + "\n")
     print(complied)

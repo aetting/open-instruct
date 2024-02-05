@@ -93,7 +93,7 @@ def main(args):
     print(pred_tokens)
     complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
 
-    with open(args.data_file.split(".")[-2]+"-compliance.jsonl", "w") as fout:
+    with open(args.data_file.strip(".jsonl")+"-compliance.jsonl", "w") as fout:
         i = 0
         for prompt,compliance,tok in zip(prompts,complied,pred_tokens):
             i += 1

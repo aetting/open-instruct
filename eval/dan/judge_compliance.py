@@ -88,7 +88,7 @@ def main(args):
     answer_choice_ids = [tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1] for answer_choice in choices]
     # answer_choice_ids = None
     pred_tokens, _ = get_next_word_predictions(
-        model, tokenizer, prompts[:15], candidate_token_ids=answer_choice_ids, return_token_predictions=True
+        model, tokenizer, prompts, candidate_token_ids=answer_choice_ids, return_token_predictions=True
     )
     print(pred_tokens)
     complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
@@ -97,7 +97,7 @@ def main(args):
         i = 0
         for prompt,compliance,tok in zip(prompts,complied,pred_tokens):
             i += 1
-            if i > 10: break
+            # if i > 10: break
             curr_result = {}
             curr_result["prompt"] = prompt
             curr_result["tok"] = tok

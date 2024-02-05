@@ -92,13 +92,21 @@ def main(args):
     )
     print(pred_tokens)
     complied = [re.match(".*[Y|y]es",resp) is not None for resp in pred_tokens]
-    for prompt,compliance,tok in zip(prompts,complied,pred_tokens):
-        print(prompt)
-        print(tok)
-        print(compliance)
-        print("\n\n~~~~\n\n")
+
+    with open(args.data_file.split(".")[-2]+"-compliance.jsonl", "w") as fout:
+        i = 0
+        for prompt,compliance,tok in zip(prompts,complied,pred_tokens):
+            i += 1
+            if i > 10: break
+            curr_result = {}
+            curr_result["prompt"] = prompt
+            curr_result["tok"] = tok
+            curr_result["compliance"] = compliance
+            print(f"{prompt}\n{tok}\n{compliance}\n\n~~~~\n\n")
+            fout.write(json.dumps(curr_result) + "\n")
     print(complied)
     print(sum(complied))
+
 
 
 if __name__ == "__main__":

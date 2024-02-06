@@ -88,7 +88,7 @@ def main(args):
         prompts.append(prompt)
 
 
-    prompts = prompts[:5]
+    # prompts = prompts[:5]
     answer_choice_ids = [tokenizer.encode(" " + answer_choice, add_special_tokens=False)[-1] for answer_choice in choices]
     # answer_choice_ids = None
     pred_tokens, _ = get_next_word_predictions(

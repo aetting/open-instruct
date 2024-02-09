@@ -7,6 +7,8 @@ import random
 import pandas as pd
 from collections import defaultdict
 
+import hf_olmo
+
 import torch
 import vllm
 from tqdm import tqdm, trange
@@ -119,7 +121,7 @@ def main(args):
                 # we will use the original text as the prompt.
                 prompt = core_content
             prompts.append(prompt)
-        # import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
         if args.use_vllm:
             print("Loading vLLM model...")

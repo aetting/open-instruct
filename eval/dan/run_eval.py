@@ -149,6 +149,8 @@ def main(args):
                 gptq_model=args.gptq,
                 use_fast_tokenizer=not args.use_slow_tokenizer,
             )
+            if args.olmo:
+                model.tie_weights()
             # import pdb; pdb.set_trace()
             new_line_token = tokenizer.encode("\n", add_special_tokens=False)[-1]
             outputs = generate_completions(
@@ -300,6 +302,11 @@ if __name__ == "__main__":
         "--gptq",
         action="store_true",
         help="If given, we're evaluating a 4-bit quantized GPTQ model.",
+    )
+    parser.add_argument(
+        "--olmo",
+        action="store_true",
+        help="Using OLMo.",
     )
     parser.add_argument(
         "--use_chat_format", 

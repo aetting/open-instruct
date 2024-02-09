@@ -119,7 +119,7 @@ def main(args):
                 prompt = chat_formatting_function(messages, add_bos=False)
             else:
                 # we will use the original text as the prompt.
-                prompt = core_content
+                prompt = core_content + '\n'
             prompts.append(prompt)
         import pdb; pdb.set_trace()
 

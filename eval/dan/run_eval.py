@@ -140,17 +140,20 @@ def main(args):
             del model  # free up GPU memory to load the classifier later.
         else:
             print("Loading model and tokenizer for generations...")
+            if not args.olmo:
+                device_map="balanced_low_0" if torch.cuda.device_count() else "auto"
+            else:
+                device_map = {"": 0}
             model, tokenizer = load_hf_lm_and_tokenizer(
                 model_name_or_path=args.model_name_or_path,
                 tokenizer_name_or_path=args.tokenizer_name_or_path if args.model_name_or_path else args.model_name_or_path,
                 load_in_8bit=args.load_in_8bit,
-                device_map="balanced_low_0" if torch.cuda.device_count() > 1 and not args.olmo else "auto",
+                device_map=device_map,
                 gptq_model=args.gptq,
                 use_fast_tokenizer=not args.use_slow_tokenizer,
             )
-            if args.olmo:
-                model.tie_weights()
-            # import pdb; pdb.set_trace()
+            if args.hold_run:
+                import pdb; pdb.set_trace()
             new_line_token = tokenizer.encode("\n", add_special_tokens=False)[-1]
             outputs = generate_completions(
                 model=model,
@@ -328,6 +331,11 @@ if __name__ == "__main__":
         type=int,
         default=500,
         help="If given, we will only use this many prompts per group. Default to 500 (half the available prompts).",
+    )
+    parser.add_argument(
+        "--hold_run",
+        action="store_true",
+        help="If given, we will use vLLM to generate the predictions - much faster.",
     )
     args = parser.parse_args()
 

@@ -122,6 +122,8 @@ def main(args):
                 prompt = core_content + '\n'
             prompts.append(prompt)
 
+        import pdb; pdb.set_trace()
+
         if args.use_vllm:
             print("Loading vLLM model...")
             model = vllm.LLM(

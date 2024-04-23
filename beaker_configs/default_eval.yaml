@@ -1,5 +1,6 @@
 version: v2
 description: open-instruct-eval-default
+budget: ai2/oe-adapt
 tasks:
   - name: open-instruct-eval-default
     image:
@@ -11,8 +12,8 @@ tasks:
       --ntrain 5
       --data_dir /data/mmlu/
       --save_dir /output/
-      --model /model
-      --tokenizer /model
+      --model_name_or_path /model
+      --tokenizer_name_or_path /model
       --eval_batch_size 4
       --load_in_8bit
       --use_chat_format
@@ -49,6 +50,7 @@ tasks:
       path: /output
     resources:
       gpuCount: 1
+    constraints:
+      cluster: ai2/allennlp-cirrascale
     context:
-      cluster: ai2/general-cirrascale
       priority: high

@@ -27,7 +27,7 @@ wget -P data/eval/gsm/ https://github.com/openai/grade-school-math/raw/master/gr
 
 # Codex HumanEval
 wget -P data/eval/codex_humaneval https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz
-
+wget -P data/eval/codex_humaneval https://huggingface.co/datasets/bigcode/humanevalpack/raw/main/data/python/data/humanevalpack.jsonl
 
 # Alpaca Farm reference
 wget -P data/eval/alpaca_farm https://huggingface.co/datasets/hamishivi/alpaca-farm-davinci-003-2048-token/resolve/main/davinci_003_outputs.json
@@ -43,6 +43,14 @@ for minority_group in asian black chinese jewish latino lgbtq mental_disability 
 do
     wget -O data/eval/toxigen/hate_${minority_group}.txt https://raw.githubusercontent.com/microsoft/TOXIGEN/main/prompts/hate_${minority_group}_1k.txt
 done
+
+
+# IFEVAL data
+wget -P data/eval/ifeval https://github.com/google-research/google-research/raw/master/instruction_following_eval/data/input_data.jsonl
+
+
+# XSTest data
+wget -P data/eval/xstest https://github.com/paul-rottger/exaggerated-safety/raw/main/xstest_v2_prompts.csv
 
 
 # we use self-instruct test set, and vicuna test set for our human evaluation

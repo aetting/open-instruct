@@ -8,9 +8,10 @@ import evaluate
 import numpy as np
 from eval.utils import (
     generate_completions, 
-    load_hf_lm_and_tokenizer, 
+    load_hf_lm, 
     query_openai_chat_model,
     dynamic_import_function,
+    load_hf_tokenizer,
 )
 
 
@@ -99,6 +100,11 @@ def main(args):
         
     if args.model_name_or_path:
         print("Loading model and tokenizer...")
+        tokenizer = load_hf_tokenizer(
+            model_name_or_path=args.model_name_or_path,
+            tokenizer_name_or_path=args.tokenizer_name_or_path,
+            use_fast_tokenizer=not args.use_slow_tokenizer,
+        )
         if args.use_vllm:
             model = vllm.LLM(
                 model=args.model_name_or_path,
@@ -106,16 +112,18 @@ def main(args):
                 tokenizer_mode="slow" if args.use_slow_tokenizer else "auto",
                 tensor_parallel_size=torch.cuda.device_count(),
             )
-            tokenizer = model.llm_engine.tokenizer
+            
         else:
-            model, tokenizer = load_hf_lm_and_tokenizer(
+            model = load_hf_lm(
                 model_name_or_path=args.model_name_or_path, 
-                tokenizer_name_or_path=args.tokenizer_name_or_path, 
                 load_in_8bit=args.load_in_8bit, 
                 device_map="balanced_low_0" if torch.cuda.device_count() > 1 else "auto",
                 gptq_model=args.gptq,
-                use_fast_tokenizer=not args.use_slow_tokenizer,
             )
+            from transformers import GPTNeoXForCausalLM, OPTForCausalLM
+            if isinstance(model, GPTNeoXForCausalLM) or isinstance(model, OPTForCausalLM):
+                tokenizer.model_max_length = model.config.max_position_embeddings
+                print("Set tokenizer.model_max_length to model.config.max_position_embeddings: {}".format(model.config.max_position_embeddings))
     else:
         import tiktoken
         tokenizer = tiktoken.get_encoding("cl100k_base")
@@ -169,7 +177,7 @@ def main(args):
 
         if args.use_chat_format:
             messages = [{"role": "user", "content": prompt}]
-            prompt = chat_formatting_function(messages, add_bos=False)
+            prompt = chat_formatting_function(messages, tokenizer, add_bos=False)
             prompt += a_template if prompt[-1] in ["\n", " "] else " " + a_template
         else:
             prompt += a_template
@@ -224,7 +232,17 @@ def main(args):
         lang_references = [{"id": example["id"], "answers": example["answers"]} for example in test_data if example["lang"] == lang]
         eval_scores[lang] = metric.compute(predictions=lang_predictions, references=lang_references)
 
-    eval_scores["average"] = {metric: np.mean([scores[metric] for scores in eval_scores.values()]) for metric in ["f1", "exact_match"]}
+    print("Calculating recall ...")
+    for lang in data_languages:
+        lang_predictions = [output for example, output in zip(test_data, outputs) if example["lang"] == lang]
+        lang_references = [example["answers"] for example in test_data if example["lang"] == lang]
+        recalls = []
+        for pred, refs in zip(lang_predictions, lang_references):
+            recall = 100.0 if any([ref['text'].strip().lower() in pred.strip().lower() for ref in refs]) else 0.0
+            recalls.append(recall)
+        eval_scores[lang]['recall'] = np.mean(recalls)
+
+    eval_scores["average"] = {metric: np.mean([scores[metric] for scores in eval_scores.values()]) for metric in ["f1", "exact_match", "recall"]}
 
     print("Scores:")
     print(json.dumps(eval_scores, indent=4))

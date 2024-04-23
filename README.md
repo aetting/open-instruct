@@ -38,6 +38,20 @@ If you just want the dependencies for the weight diff script, use:
 pip install -r weight-diff-requirements.txt
 ```
 
+If you'd like to experiment with AI2's [OLMo](https://huggingface.co/allenai/OLMo-7B) models, you should also install:
+
+```bash
+pip install ai2-olmo
+```
+
+If you'd like to run experiments within a Docker environment, you can create one using:
+
+```bash
+docker build --build-arg CUDA=11.8.0 --build-arg TARGET=cudnn8-devel --build-arg DIST=ubuntu20.04 . -t <your tag here>
+```
+
+If you are internally at AI2, you can use this pre-built beaker image [here](https://beaker.org/im/01HQ1PMA9YCVKXYN6BHP5EYV5E/details).
+
 ## Training
 
 ### Dataset preparation
@@ -49,6 +63,8 @@ We include a collection of representative instruction datasets in our exploratio
 ```
 
 Please check these datasets for licenses and restrictions around their use!
+
+You can also find the processed [Tulu v1](https://huggingface.co/datasets/allenai/tulu-v1-sft-mixture) and [Tulu v2](https://huggingface.co/datasets/allenai/tulu-v2-sft-mixture) SFT datasets on HuggingFace.
 
 ### Model preparation
 
@@ -111,7 +127,9 @@ We provide the scripts for running evaluation of Huggingface/OpenAI models on a 
 - [Big-Bench Hard (BBH)](https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main)
 - [TydiQA](https://github.com/google-research-datasets/tydiqa)
 - [Codex HumanEval](https://github.com/openai/human-eval/tree/master)
+- [IFEval](https://github.com/google-research/google-research/tree/master/instruction_following_eval)
 - [ToxiGen](https://github.com/microsoft/TOXIGEN)
+- [XSTest](https://github.com/paul-rottger/exaggerated-safety/)
 - [TruthfulQA](https://github.com/sylinrl/TruthfulQA)
 - [AlpacaEval](https://github.com/tatsu-lab/alpaca_eval)
 

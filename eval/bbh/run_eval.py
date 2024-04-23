@@ -9,10 +9,11 @@ import random
 import vllm
 import evaluate
 from eval.utils import (
-    load_hf_lm_and_tokenizer,
+    load_hf_lm,
     generate_completions,
     query_openai_chat_model,
     dynamic_import_function,
+    load_hf_tokenizer
 )
 
 
@@ -59,6 +60,11 @@ def main(args):
 
     # Load model if not using OpenAI API
     if args.model_name_or_path:
+        tokenizer = load_hf_tokenizer(
+            model_name_or_path=args.model_name_or_path,
+            tokenizer_name_or_path=args.tokenizer_name_or_path,
+            use_fast_tokenizer=not args.use_slow_tokenizer,
+        )
         if args.use_vllm:
             print("Loading vllm model...")
             model = vllm.LLM(
@@ -69,14 +75,17 @@ def main(args):
             )
         else:
             print("Loading model and tokenizer with huggingface...")
-            model, tokenizer = load_hf_lm_and_tokenizer(
+            model = load_hf_lm(
                 model_name_or_path=args.model_name_or_path, 
-                tokenizer_name_or_path=args.tokenizer_name_or_path, 
                 load_in_8bit=args.load_in_8bit, 
                 device_map="balanced_low_0" if torch.cuda.device_count() > 1 else "auto",
                 gptq_model=args.gptq,
-                use_fast_tokenizer=not args.use_slow_tokenizer,
             )
+            # modify tokenizer if required
+            from transformers import GPTNeoXForCausalLM, OPTForCausalLM
+            if isinstance(model, GPTNeoXForCausalLM) or isinstance(model, OPTForCausalLM):
+                tokenizer.model_max_length = model.config.max_position_embeddings
+                print("Set tokenizer.model_max_length to model.config.max_position_embeddings: {}".format(model.config.max_position_embeddings))
 
     performance = {}
     for task_name in tqdm.tqdm(all_tasks.keys(), desc="Evaluating"):
@@ -90,7 +99,7 @@ def main(args):
                 for example in task_examples:
                     prompt = task_prompt.strip() + "\n\nQ: " + example["input"]
                     messages = [{"role": "user", "content": prompt}]
-                    prompt = chat_formatting_function(messages, add_bos=False)
+                    prompt = chat_formatting_function(messages, tokenizer, add_bos=False)
                     prompt += "A:" if prompt[-1] in ["\n", " "] else " A:"
                     prompts.append(prompt)
             else:
@@ -101,7 +110,7 @@ def main(args):
                 sampling_params = vllm.SamplingParams(
                     temperature=0,
                     max_tokens=512,
-                    stop=["\n\n"] if not args.use_chat_format else None,  # we only use stop token for non-chat format (usually applied to vanilla pretrained language models). For chat format, we will rely on the model knows when to stop.
+                    stop=["\n\n"],
                 )
                 # We need to remap the outputs to the prompts because vllm might not return outputs for some prompts (e.g., if the prompt is too long)
                 generations = model.generate(prompts, sampling_params)
@@ -119,7 +128,7 @@ def main(args):
                     max_new_tokens=512,
                     temperature=0,
                     batch_size=args.eval_batch_size if args.eval_batch_size else 1,
-                    stop_id_sequences=[[stop_sequence]] if not args.use_chat_format else None,  # we only use stop token for non-chat format (usually applied to vanilla pretrained language models). For chat format, we will rely on the model knows when to stop.
+                    stop_id_sequences=[[stop_sequence]],
                 )
         else:
             instances = []

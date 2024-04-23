@@ -6,11 +6,13 @@ import random
 import torch
 import vllm
 import evaluate
+from transformers import AutoTokenizer
 from eval.utils import (
     generate_completions,
-    load_hf_lm_and_tokenizer,
+    load_hf_lm,
     query_openai_chat_model,
     dynamic_import_function,
+    load_hf_tokenizer
 )
 from eval.gsm.examplars import EXAMPLARS as GSM_EXAMPLARS
 
@@ -62,18 +64,20 @@ def main(args):
         prompt_prefix = "Answer the following question.\n\n"
 
     if args.use_chat_format:
-        prompts = []
         chat_formatting_function = dynamic_import_function(args.chat_formatting_function)
-        for example in test_data:
+        def apply_chat_format(example, tokenizer):
             messages = [{"role": "user", "content": prompt_prefix + "Question: " + example["question"].strip()}]
-            prompt = chat_formatting_function(messages, add_bos=False)
+            prompt = chat_formatting_function(messages, tokenizer, add_bos=False)
             prompt += "Answer:" if prompt[-1] in ["\n", " "] else " Answer:"
-            prompts.append(prompt)
-    else:
-        prompts = [prompt_prefix + "Question: " + example["question"].strip() + "\nAnswer:" for example in test_data]
+            return prompt
 
     if args.model_name_or_path:
         print("Loading model and tokenizer...")
+        tokenizer = load_hf_tokenizer(
+            model_name_or_path=args.model_name_or_path,
+            tokenizer_name_or_path=args.tokenizer_name_or_path,
+            use_fast_tokenizer=not args.use_slow_tokenizer,
+        )
         if args.use_vllm:
             model = vllm.LLM(
                 model=args.model_name_or_path,
@@ -86,6 +90,10 @@ def main(args):
                 max_tokens=512,
                 stop=["\n"] if not args.use_chat_format else None, # we only use stop token for non-chat format (usually applied to vanilla pretrained language models). For chat format, we will rely on the model knows when to stop.
             )
+            if args.use_chat_format:
+                prompts = [apply_chat_format(example, tokenizer) for example in test_data]
+            else:
+                prompts = [prompt_prefix + "Question: " + example["question"].strip() + "\nAnswer:" for example in test_data]
             # We need to remap the outputs to the prompts because vllm might not return outputs for some prompts (e.g., if the prompt is too long)
             generations = model.generate(prompts, sampling_params)
             prompt_to_output = {
@@ -93,14 +101,20 @@ def main(args):
             }
             outputs = [prompt_to_output[prompt] if prompt in prompt_to_output else "" for prompt in prompts]
         else:
-            model, tokenizer = load_hf_lm_and_tokenizer(
+            model = load_hf_lm(
                 model_name_or_path=args.model_name_or_path, 
-                tokenizer_name_or_path=args.tokenizer_name_or_path, 
                 load_in_8bit=args.load_in_8bit, 
                 device_map="balanced_low_0" if torch.cuda.device_count() > 1 else "auto",
                 gptq_model=args.gptq,
-                use_fast_tokenizer=not args.use_slow_tokenizer,
             )
+            from transformers import GPTNeoXForCausalLM, OPTForCausalLM
+            if isinstance(model, GPTNeoXForCausalLM) or isinstance(model, OPTForCausalLM):
+                tokenizer.model_max_length = model.config.max_position_embeddings
+                print("Set tokenizer.model_max_length to model.config.max_position_embeddings: {}".format(model.config.max_position_embeddings))
+            if args.use_chat_format:
+                prompts = [apply_chat_format(example, tokenizer) for example in test_data]
+            else:
+                prompts = [prompt_prefix + "Question: " + example["question"].strip() + "\nAnswer:" for example in test_data]            
             new_line_token = tokenizer.encode("\n", add_special_tokens=False)[-1] # get the last token because the tokenizer may add space tokens at the start.
             outputs = generate_completions(
                 model=model,

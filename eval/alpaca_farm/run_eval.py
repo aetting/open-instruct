@@ -7,8 +7,7 @@ import torch
 import datasets
 import vllm
 from alpaca_eval import evaluate as alpaca_farm_evaluate
-from eval.utils import query_openai_chat_model, query_openai_model, generate_completions, dynamic_import_function, load_hf_lm_and_tokenizer
-
+from eval.utils import query_openai_chat_model, query_openai_model, generate_completions, dynamic_import_function, load_hf_lm, load_hf_tokenizer
 
 def main(args):
     random.seed(42)
@@ -20,32 +19,60 @@ def main(args):
     chat_formatting_function = dynamic_import_function(args.chat_formatting_function) if args.use_chat_format else None
     for example in alpaca_eval_data:
         prompt = example["instruction"]
-        if args.use_chat_format:
-            messages = [{"role": "user", "content": prompt}]
-            prompt = chat_formatting_function(messages, add_bos=False)
         prompts.append(prompt)
 
     if args.model_name_or_path is not None:
+        # we always load the tokenizer for vllm or hf models
+        tokenizer = load_hf_tokenizer(
+                model_name_or_path=args.model_name_or_path,
+                tokenizer_name_or_path=args.tokenizer_name_or_path,
+                use_fast_tokenizer=not args.use_slow_tokenizer,
+            )
+
         if args.use_vllm:
             model = vllm.LLM(
                 model=args.model_name_or_path,
                 tokenizer=args.tokenizer_name_or_path if args.tokenizer_name_or_path is not None else args.model_name_or_path,
+                tokenizer_mode="slow" if args.use_slow_tokenizer else "auto",
                 tensor_parallel_size=torch.cuda.device_count(),
             )
+            
             sampling_params = vllm.SamplingParams(
                 temperature=0,  # greedy decoding
                 max_tokens=args.max_new_tokens,
             )
+            # apply chat formatting
+            if args.use_chat_format:
+                formatted_prompts = []
+                for prompt in prompts:
+                    messages = [{"role": "user", "content": prompt}]
+                    formatted_prompt = chat_formatting_function(messages, tokenizer, add_bos=False)
+                    formatted_prompts.append(formatted_prompt)
+                prompts = formatted_prompts
+                    
             outputs = model.generate(prompts, sampling_params)
             outputs = [it.outputs[0].text for it in outputs]
         else:
-            model, tokenizer = load_hf_lm_and_tokenizer(
+            model = load_hf_lm(
                 model_name_or_path=args.model_name_or_path,
-                tokenizer_name_or_path=args.tokenizer_name_or_path if args.tokenizer_name_or_path is not None else args.model_name_or_path,
                 load_in_8bit=args.load_in_8bit,
                 device_map="balanced_low_0" if torch.cuda.device_count() > 1 else "auto",
                 gptq_model=args.gptq,
             )
+            # modify tokenizer if required
+            from transformers import GPTNeoXForCausalLM, OPTForCausalLM
+            if isinstance(model, GPTNeoXForCausalLM) or isinstance(model, OPTForCausalLM):
+                tokenizer.model_max_length = model.config.max_position_embeddings
+                print("Set tokenizer.model_max_length to model.config.max_position_embeddings: {}".format(model.config.max_position_embeddings))
+
+            # apply chat formatting
+            if args.use_chat_format:
+                formatted_prompts = []
+                for prompt in prompts:
+                    messages = [{"role": "user", "content": prompt}]
+                    formatted_prompt = chat_formatting_function(messages, tokenizer, add_bos=False)
+                    formatted_prompts.append(formatted_prompt)
+                prompts = formatted_prompts
             outputs = generate_completions(
                 model=model,
                 tokenizer=tokenizer,
@@ -135,6 +162,11 @@ if __name__ == "__main__":
         type=str,
         default=None,
         help="If specified, we will load the tokenizer from here.",
+    )
+    parser.add_argument(
+        "--use_slow_tokenizer",
+        action="store_true",
+        help="If given, we will use the slow tokenizer."
     )
     parser.add_argument(
         "--openai_engine",

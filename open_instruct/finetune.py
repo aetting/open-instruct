@@ -72,6 +72,13 @@ def parse_args():
         help="Pretrained config name or path if not the same as model_name",
     )
     parser.add_argument(
+        "--model_revision",
+        help="""If given, specifies a model revision (for HuggingFace models). This will 
+        be applied to both the `model_name_or_path` and `config_name` args.""",
+        default="main",
+        required=False,
+    )
+    parser.add_argument(
         "--use_lora",
         action="store_true",
         help="If passed, will use LORA (low-rank parameter-efficient training) to train the model.",
@@ -104,6 +111,15 @@ def parse_args():
         type=str,
         default=None,
         help="Pretrained tokenizer name or path if not the same as model_name",
+    )
+    parser.add_argument(
+        "--tokenizer_revision",
+        help="""Specifies a revision for the tokenizer. If not given, defaults
+             to the value of the `model_revision` arg. In most cases, the tokenizer
+             revision should be the same as the model revision and this flag shouldn't
+             be needed.""",
+        default=None,
+        required=False,
     )
     parser.add_argument(
         "--use_slow_tokenizer",
@@ -153,7 +169,7 @@ def parse_args():
         "--warmup_ratio", type=float, default=0, help="Ratio of total training steps used for warmup."
     )
     parser.add_argument("--output_dir", type=str, default=None, help="Where to store the final model.")
-    parser.add_argument("--seed", type=int, default=None, help="A seed for reproducible training.")
+    parser.add_argument("--seed", type=int, default=42, help="A seed for reproducible training.")
     parser.add_argument(
         "--preprocessing_num_workers",
         type=int,
@@ -371,7 +387,7 @@ def save_with_accelerate(accelerator, model, tokenizer, output_dir, args):
             output_dir, is_main_process=accelerator.is_main_process, save_function=accelerator.save, state_dict=state_dict,
             safe_serialization=False
         )
-        
+
 
 def main():
     args = parse_args()
@@ -436,18 +452,49 @@ def main():
 
     # Load pretrained model and tokenizer
     if args.config_name:
-        config = AutoConfig.from_pretrained(args.config_name, trust_remote_code=args.trust_remote_code)
+        config = AutoConfig.from_pretrained(
+            args.config_name,
+            trust_remote_code=args.trust_remote_code,
+            revision=args.model_revision,
+        )
     elif args.model_name_or_path:
-        config = AutoConfig.from_pretrained(args.model_name_or_path, trust_remote_code=args.trust_remote_code)
+        config = AutoConfig.from_pretrained(
+            args.model_name_or_path,
+            trust_remote_code=args.trust_remote_code,
+            revision=args.model_revision,
+        )
     else:
         raise ValueError(
             "You are instantiating a new config instance from scratch. This is not supported by this script."
         )
 
+    tokenizer_revision = (
+        args.model_revision
+        if args.tokenizer_revision is None
+        else args.tokenizer_revision
+    )
+
+    if tokenizer_revision != args.model_revision:
+        # Warn user if tokenizer and model use different revisions; this is an unusual
+        # use case.
+        warning = f"""Requested tokenizer revision `{tokenizer_revision}` is different
+                   from the model revision `{args.model_revision}`."""
+        logger.warn(warning)
+
     if args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, trust_remote_code=args.trust_remote_code, use_fast=not args.use_slow_tokenizer)
+        tokenizer = AutoTokenizer.from_pretrained(
+            args.tokenizer_name,
+            trust_remote_code=args.trust_remote_code,
+            use_fast=not args.use_slow_tokenizer,
+            revision=tokenizer_revision
+        )
     elif args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=args.trust_remote_code, use_fast=not args.use_slow_tokenizer)
+        tokenizer = AutoTokenizer.from_pretrained(
+            args.model_name_or_path,
+            trust_remote_code=args.trust_remote_code,
+            use_fast=not args.use_slow_tokenizer,
+            revision=tokenizer_revision
+        )
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
@@ -474,6 +521,7 @@ def main():
                 trust_remote_code=args.trust_remote_code,
                 torch_dtype=torch.bfloat16,
                 use_flash_attention_2=True if args.use_flash_attn else False,
+                revision=args.model_revision
             )
         else:
             model = AutoModelForCausalLM.from_pretrained(
@@ -483,11 +531,11 @@ def main():
                 trust_remote_code=args.trust_remote_code,
                 low_cpu_mem_usage=args.low_cpu_mem_usage,
                 use_flash_attention_2=True if args.use_flash_attn else False,
+                revision=args.model_revision
             )
     else:
         logger.info("Training new model from scratch")
         model = AutoModelForCausalLM.from_config(config)
-
 
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
@@ -536,6 +584,8 @@ def main():
         )
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
+    elif args.gradient_checkpointing:
+        model.gradient_checkpointing_enable()
 
     # Preprocessing the datasets.
     if "prompt" in raw_datasets["train"].column_names and "completion" in raw_datasets["train"].column_names:
@@ -786,14 +836,14 @@ def main():
                 output_dir = os.path.join(args.output_dir, output_dir)
             save_with_accelerate(accelerator, model, tokenizer, output_dir, args)
 
-    if args.with_tracking:
-        accelerator.end_training()
-
     if args.output_dir is not None:
-        accelerator.wait_for_everyone()
         if accelerator.is_main_process:
             tokenizer.save_pretrained(args.output_dir)
         save_with_accelerate(accelerator, model, tokenizer, args.output_dir, args)
+
+    accelerator.wait_for_everyone()
+    if args.with_tracking:
+        accelerator.end_training()
 
 
 if __name__ == "__main__":

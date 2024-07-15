@@ -6,7 +6,7 @@ from datetime import date
 
 today = date.today().strftime("%m%d%Y")
 
-with open("beaker_configs/default_finetune.yaml", 'r') as f:
+with open("configs/beaker_configs/default_finetune.yaml", 'r') as f:
     default_yaml = f.read()
 d1 = yaml.load(default_yaml, Loader=yaml.FullLoader)
 
@@ -16,6 +16,7 @@ cluster = "ai2/allennlp-cirrascale"
 num_gpus = 4
 d1['tasks'][0]['context']['cluster'] = cluster
 d1['tasks'][0]['context']['priority'] = "high"
+d1['tasks'][0]['context']['preemptible'] = False # requried for Jupiter/Pluto
 d1['tasks'][0]['resources']['gpuCount'] = num_gpus
 
 # modify here for different set of experiments
@@ -74,8 +75,8 @@ if experiment_group == "dataset_comparison":
                 f"--gradient_accumulation_steps {128 // 2 // num_gpus}"
             )
             d['tasks'][0]['arguments'][0] = d['tasks'][0]['arguments'][0].replace(
-                "--deepspeed_config_file ds_configs/stage3_no_offloading_accelerate.conf",
-                "--deepspeed_config_file ds_configs/stage3_offloading_accelerate.conf",
+                "--deepspeed_config_file configs/ds_configs/stage3_no_offloading_accelerate.conf",
+                "--deepspeed_config_file configs/ds_configs/stage3_offloading_accelerate.conf",
             )
         else:
             raise NotImplementedError
@@ -125,7 +126,7 @@ if experiment_group == "dataset_comparison":
         })
         # print(d)
 
-        fn = "beaker_configs/auto_created/{}.yaml".format(exp_name)
+        fn = "configs/beaker_configs/auto_created/{}.yaml".format(exp_name)
         file = open(fn, "w")
         yaml.dump(d, file, default_flow_style=True)
         file.close()
